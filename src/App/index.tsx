@@ -7,10 +7,12 @@ import {
   Fab,
   Grid,
   Paper,
+  Tabs,
+  Tab,
   Toolbar,
   Typography,
 } from '@mui/material';
-import {getPlaces} from '../api';
+import {getOnlineRetailers, getPlaces} from '../api';
 import {Place} from '../types';
 import {userLocationType} from '../locationUtils';
 import AddIcon from '@mui/icons-material/Add';
@@ -24,9 +26,26 @@ import Switch from '@mui/material/Switch';
 
 import {ThemeProvider} from '@mui/material/styles';
 import themeTemplate from '../theme';
+import {TabContext, TabPanel} from '@mui/lab';
 
 // location prop is for testing only.
 function App() {
+  const test = async () => {
+    const onlineRetailers = await getOnlineRetailers();
+    let num = 0;
+
+    onlineRetailers.forEach((onlineRetailer: any) => {
+      if (onlineRetailer.stock) {
+        num++;
+      }
+    });
+    console.log(num);
+  };
+
+  useEffect(() => {
+    test();
+  });
+
   return (
     <ThemeProvider theme={themeTemplate}>
       <CssBaseline>
@@ -113,6 +132,11 @@ function MainComponent() {
     }
   }, [dialogOpen]);
 
+  const [tabValue, setTabValue] = useState('0');
+  const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
+    setTabValue(newValue);
+  };
+
   return (
     <Box sx={{p: 1}}>
       <>
@@ -127,97 +151,112 @@ function MainComponent() {
             have tests or stores that have sold out.
           </Typography>
         </Paper>
-        {(!userLocation ||
-          !userLocation?.latitude ||
-          !userLocation?.longitude) && (
-          <Alert severity="error" sx={{mt: 2}}>
-            Please set your location below to find stores with tests.{' '}
-          </Alert>
-        )}
-        <LocationContext.Provider value={userLocation}>
-          <form>
-            <Grid
-              columnSpacing={{xs: 5, sm: 15, md: 30}}
-              rowSpacing={1}
-              container
-              sx={{
-                display: 'flex',
-                width: '100%',
-                justifyContent: 'center',
-                pt: 2,
-                alignItems: 'center',
-              }}
+        <TabContext value={tabValue}>
+          <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
+            <Tabs
+              value={tabValue}
+              onChange={handleTabChange}
+              aria-label="basic tabs example"
             >
-              <Grid item sx={{display: 'flex', alignItems: 'center'}}>
-                <Location
-                  onUserLocationSet={loc => {
-                    setUserLocation(loc);
-                    setIsLoading(false);
+              <Tab label="In-Store Tests" value="0" />
+              <Tab label="Online Retailers" value="1" />
+            </Tabs>
+          </Box>
+          <TabPanel value="0">
+            {(!userLocation ||
+              !userLocation?.latitude ||
+              !userLocation?.longitude) && (
+              <Alert severity="error" sx={{mt: 2}}>
+                Please set your location below to find stores with tests.{' '}
+              </Alert>
+            )}
+            <LocationContext.Provider value={userLocation}>
+              <form>
+                <Grid
+                  columnSpacing={{xs: 5, sm: 15, md: 30}}
+                  rowSpacing={1}
+                  container
+                  sx={{
+                    display: 'flex',
+                    width: '100%',
+                    justifyContent: 'center',
+                    pt: 2,
+                    alignItems: 'center',
                   }}
-                />
-              </Grid>
-              <Grid item>
-                <Fab
-                  variant="extended"
-                  onClick={() => setDialogOpen(true)}
-                  color="primary"
-                  aria-label="add"
-                  disabled={
-                    !userLocation ||
-                    !userLocation.latitude ||
-                    !userLocation.longitude
-                  }
                 >
-                  <AddIcon />
-                  Add Report
-                </Fab>
-              </Grid>
-            </Grid>
-          </form>
-          <AddReport
-            place={dialogPlace}
-            open={dialogOpen}
-            onClose={() => setDialogOpen(false)}
-          />
-          {isLoading ? (
-            <Box
-              sx={{
-                alignItems: 'center',
-                display: 'flex',
-                justifyContent: 'center',
-              }}
-            >
-              <CircularProgress />
-            </Box>
-          ) : (
-            <>
-              <Grid container>
-                <Grid item xs={0} sm={2} md={3} />
-                <Grid item xs={12} sm={8} md={6} sx={{m: 2}}>
-                  <Typography>
-                    Showing stores within 50 miles.
-                    <br />
-                  </Typography>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={showAvailableOnly}
-                        onChange={event =>
-                          setShowAvailableOnly(event.target.checked)
-                        }
-                      />
-                    }
-                    label="Only show stores with tests"
-                  />
-                  <br />
-                  <br />
-                  <PlacesList {...{places: filteredPlaces}} />
+                  <Grid item sx={{display: 'flex', alignItems: 'center'}}>
+                    <Location
+                      onUserLocationSet={loc => {
+                        setUserLocation(loc);
+                        setIsLoading(false);
+                      }}
+                    />
+                  </Grid>
+                  <Grid item>
+                    <Fab
+                      variant="extended"
+                      onClick={() => setDialogOpen(true)}
+                      color="primary"
+                      aria-label="add"
+                      disabled={
+                        !userLocation ||
+                        !userLocation.latitude ||
+                        !userLocation.longitude
+                      }
+                    >
+                      <AddIcon />
+                      Add Report
+                    </Fab>
+                  </Grid>
                 </Grid>
-                <Grid item xs={0} sm={2} md={3} />
-              </Grid>
-            </>
-          )}
-        </LocationContext.Provider>
+              </form>
+              <AddReport
+                place={dialogPlace}
+                open={dialogOpen}
+                onClose={() => setDialogOpen(false)}
+              />
+              {isLoading ? (
+                <Box
+                  sx={{
+                    alignItems: 'center',
+                    display: 'flex',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <>
+                  <Grid container>
+                    <Grid item xs={0} sm={2} md={3} />
+                    <Grid item xs={12} sm={8} md={6} sx={{m: 2}}>
+                      <Typography>
+                        Showing stores within 50 miles.
+                        <br />
+                      </Typography>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={showAvailableOnly}
+                            onChange={event =>
+                              setShowAvailableOnly(event.target.checked)
+                            }
+                          />
+                        }
+                        label="Only show stores with tests"
+                      />
+                      <br />
+                      <br />
+                      <PlacesList {...{places: filteredPlaces}} />
+                    </Grid>
+                    <Grid item xs={0} sm={2} md={3} />
+                  </Grid>
+                </>
+              )}
+            </LocationContext.Provider>
+          </TabPanel>
+          <TabPanel value="1">Hello</TabPanel>
+        </TabContext>
       </>
       <Box sx={{mt: 2}}>
         <Typography variant="caption">

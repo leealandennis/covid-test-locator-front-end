@@ -116,3 +116,10 @@ export const reverseGeocode = async (location: {
   );
   return (await response.text()) as string;
 };
+
+export const getOnlineRetailers = async (): Promise<any> => {
+  const response = await fetch(
+    `${process.env.REACT_APP_SERVER_URL}/online-retailers`
+  );
+  return await response.json();
+};
